@@ -16,3 +16,5 @@ $routes->post('lupa-email', 'Auth::forgotEmail');
 
 $routes->get('lupa-password', 'Auth::forgotPassword');
 $routes->post('lupa-password', 'Auth::forgotPassword');
+
+$routes->get('doctrine-test', 'DoctrineTest::index');
