@@ -8,7 +8,43 @@ class Auth extends BaseController
 {
     public function login()
     {
-        return view('auth/login');
+        if ($this->request->getMethod() !== 'POST'){
+            return view('auth/login');
+        }
+        
+        $rules = [
+            email' => 'required|valid_email',
+            'password' => 'required',
+            ];
+        }
+        $email = strtolower(trim($this->request->getPost('email')));
+        $password = $this->request->getPost('password');
+
+        // Mencari pengguna berdasarkan email
+        $users = new UserModel();
+        $user = $users->where('email', $email)->first();
+
+        // Memeriksa email dan password
+        if (!$user || !password_verify($password, $user['password_hash'])) {
+            return view('auth/login', [
+                'errors' => [
+                'login' => 'Email atau password salah.',
+            ],
+        ]);
+    }
+
+    session()->regenerate(true);
+
+    session()->set([
+        'isLoggedIn' => true,
+        'user_id' => $user['id'],
+        'user_name' => $user['name'],
+        'user_email' => $user['email'],
+    ]);
+
+    // Mengarahkan pengguna ke Dashboard
+    return redirect()->to(site_url('dashboard'));
+}
     }
 
     public function register()
