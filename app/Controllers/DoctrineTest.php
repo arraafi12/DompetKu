@@ -1,14 +1,18 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Config\Doctrine;
 use App\Entities\User;
+use App\Entities\Category;
+use App\Entities\Transaction;
 
 class DoctrineTest extends BaseController
 {
     public function index()
     {
         try {
+            // Membuat EntityManager
             $doctrine = new Doctrine();
             $entityManager = $doctrine->getEntityManager();
 
@@ -16,14 +20,25 @@ class DoctrineTest extends BaseController
             $connection = $entityManager->getConnection();
             $connection->executeQuery('SELECT 1');
 
-            // Menguji pemetaan Entity User
-            $metadata = $entityManager->getClassMetadata(User::class);
+            // Menguji metadata ketiga Entity
+            $entities = [];
+
+            foreach ([
+                User::class,
+                Category::class,
+                Transaction::class
+            ] as $entityClass) {
+
+                $metadata = $entityManager->getClassMetadata($entityClass);
+
+                $entities[$entityClass] = $metadata->getTableName();
+            }
 
             return $this->response->setJSON([
                 'status' => 'success',
-                'message' => 'Doctrine berhasil terhubung!',
+                'message' => 'Doctrine dan seluruh Entity berhasil dibaca!',
                 'database' => $connection->getDatabase(),
-                'entity' => $metadata->getTableName()
+                'entities' => $entities
             ]);
 
         } catch (\Throwable $e) {
@@ -31,7 +46,7 @@ class DoctrineTest extends BaseController
                 ->setStatusCode(500)
                 ->setJSON([
                     'status' => 'error',
-                    'message' => 'Doctrine gagal terhubung.',
+                    'message' => 'Pengujian Doctrine gagal.',
                     'error' => $e->getMessage(),
                     'file' => $e->getFile(),
                     'line' => $e->getLine()

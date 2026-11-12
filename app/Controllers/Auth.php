@@ -8,15 +8,24 @@ class Auth extends BaseController
 {
     public function login()
     {
-        if ($this->request->getMethod() !== 'POST'){
+        // Menampilkan halaman login
+        if ($this->request->getMethod() !== 'POST') {
             return view('auth/login');
         }
-        
+
+        // Validasi input
         $rules = [
-            email' => 'required|valid_email',
+            'email' => 'required|valid_email',
             'password' => 'required',
-            ];
+        ];
+
+        if (!$this->validate($rules)) {
+            return view('auth/login', [
+                'errors' => $this->validator->getErrors(),
+            ]);
         }
+
+        // Mengambil data input
         $email = strtolower(trim($this->request->getPost('email')));
         $password = $this->request->getPost('password');
 
@@ -28,23 +37,23 @@ class Auth extends BaseController
         if (!$user || !password_verify($password, $user['password_hash'])) {
             return view('auth/login', [
                 'errors' => [
-                'login' => 'Email atau password salah.',
-            ],
+                    'login' => 'Email atau password salah.',
+                ],
+            ]);
+        }
+
+        // Membuat session pengguna
+        session()->regenerate(true);
+
+        session()->set([
+            'isLoggedIn' => true,
+            'user_id' => $user['id'],
+            'user_name' => $user['name'],
+            'user_email' => $user['email'],
         ]);
-    }
 
-    session()->regenerate(true);
-
-    session()->set([
-        'isLoggedIn' => true,
-        'user_id' => $user['id'],
-        'user_name' => $user['name'],
-        'user_email' => $user['email'],
-    ]);
-
-    // Mengarahkan pengguna ke Dashboard
-    return redirect()->to(site_url('dashboard'));
-}
+        // Mengarahkan pengguna ke Dashboard
+        return redirect()->to(site_url('dashboard'));
     }
 
     public function register()
@@ -126,7 +135,7 @@ class Auth extends BaseController
     {
         $users = new UserModel();
 
-        // Langkah kedua: simpan password baru setelah email diperiksa.
+        // Langkah kedua: menyimpan password baru
         if ($this->request->getPost('action') === 'reset_password') {
             $verifiedEmail = session()->get('reset_verified_email');
 
@@ -169,7 +178,7 @@ class Auth extends BaseController
                 ->with('success', 'Password berhasil diubah. Silakan masuk.');
         }
 
-        // Langkah pertama: periksa apakah email terdaftar.
+        // Langkah pertama: memeriksa email
         if ($this->request->getPost('action') === 'verify_email') {
             $email = strtolower(trim($this->request->getPost('email')));
 
@@ -184,13 +193,11 @@ class Auth extends BaseController
 
             if (!$user) {
                 return view('auth/forgot_password', [
-                    'errors' => ['Email tidak ditemukan. Periksa kembali email lu.'],
+                    'errors' => ['Email tidak ditemukan. Periksa kembali email kamu.'],
                     'verifiedEmail' => null,
                 ]);
             }
 
-            // Ini hanya pemeriksaan email di database,
-            // bukan bukti kepemilikan email.
             session()->set('reset_verified_email', $user['email']);
 
             return view('auth/forgot_password', [
@@ -203,5 +210,12 @@ class Auth extends BaseController
             'errors' => [],
             'verifiedEmail' => null,
         ]);
+    }
+    // Logout
+    public function logout()
+    {
+        session()->destroy();
+        
+        return redirect()->to(site_url('login'));
     }
 }
